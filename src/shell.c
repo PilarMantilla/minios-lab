@@ -197,19 +197,35 @@ static void cmd_runpair(const char *name) {
 static void cmd_run(const char *path, const char *arg) {
     // Paso 1. Si path es NULL o vacio, imprimir mensaje de uso y retornar:
     //         "Uso: run <binario> [argumento]"
+    if (path == NULL || strlen(path) == 0) {
+        printf("Uso: run <binario> [argumento]\n");
+        return;
+    }
 
     // Paso 2. Validar que el archivo existe y es ejecutable:
     //         access(path, X_OK) == 0. Si no, imprimir error y retornar.
+    if (access(path, X_OK) != 0) {
+        perror("access");
+        return;
+    }
 
     // Paso 3. Crear el proceso:
     //         int idx = scheduler_create_process(path, arg);
     //         Si idx < 0, retornar (el scheduler ya imprimio el error).
+    int idx = scheduler_create_process(path, arg);
+
+    if (idx < 0) {
+        printf("No se pudo crear el proceso.\n");
+        return;
+    }
 
     // Paso 4. Si el scheduler NO esta corriendo Y la ready queue NO esta vacia,
     //         arrancar el scheduler con timer_get_slice() como slice:
     //         scheduler_start(timer_get_slice());
+    if (!scheduler_is_running() && !rq_is_empty()) {
+        scheduler_start(timer_get_slice());
+    }
 
-    (void)path; (void)arg;  // silence unused while unimplemented
 }
 
 
