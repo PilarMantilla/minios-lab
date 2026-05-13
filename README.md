@@ -415,7 +415,7 @@ cd minios-lab/dashboard
 npm run dev
 ```
 
-Abre **http://localhost:4000** en tu navegador.
+Abre **http://localhost:5173** en tu navegador.
 
 ### Qué observar
 

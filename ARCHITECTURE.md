@@ -15,7 +15,7 @@ Prototipo educativo que demuestra **context switching y scheduling** de procesos
 │                    CAPA DE VISUALIZACIÓN                 │
 │  ┌─────────────┐    WebSocket    ┌───────────────────┐  │
 │  │  Bridge      │◄──────────────►│  Dashboard React   │  │
-│  │  (Node.js)   │                │  (localhost:3000)  │  │
+│  │  (Node.js)   │                │  (localhost:5173)  │  │
 │  └──────▲───────┘                └───────────────────┘  │
 │         │ Named Pipe / Unix Socket                      │
 ├─────────┼───────────────────────────────────────────────┤
