@@ -9,6 +9,7 @@ export default function GanttChart({ processes, getRelativeTime }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [isFollowingRight, setIsFollowingRight] = useState(true);
   const followRightRef = useRef(true);
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function GanttChart({ processes, getRelativeTime }) {
       const atRight =
         container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
       followRightRef.current = atRight;
+      setIsFollowingRight(atRight);
     };
 
     container.addEventListener('scroll', handleScroll);
@@ -33,28 +35,29 @@ export default function GanttChart({ processes, getRelativeTime }) {
     const ctx = canvas.getContext('2d');
 
     const draw = () => {
+      const procs = Object.values(processes).sort((a, b) => {
+        if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt;
+        return a.pid - b.pid;
+      });
       const containerWidth = container.clientWidth;
       const canvasWidth = Math.max(containerWidth, containerWidth * zoomLevel);
       canvas.width = canvasWidth;
-      canvas.height = Math.max(200, Object.keys(processes).length * 40 + 40);
+      canvas.height = Math.max(200, procs.length * 40 + 40);
 
       const now = getRelativeTime();
       const timeWindow = Math.max(now, 10);
-      const procs = Object.values(processes);
       const w = canvas.width;
       const h = canvas.height;
       const rowH = 30;
-      const labelW = 90;
+      const labelW = 100;
       const chartW = w - labelW - 20;
       const topMargin = 30;
 
       ctx.clearRect(0, 0, w, h);
 
-      // Background
       ctx.fillStyle = '#111827';
       ctx.fillRect(0, 0, w, h);
 
-      // Time axis
       const numTicks = Math.max(5, Math.floor(chartW / 100));
       ctx.fillStyle = '#6b7280';
       ctx.font = '11px monospace';
@@ -69,26 +72,29 @@ export default function GanttChart({ processes, getRelativeTime }) {
         ctx.stroke();
       }
 
+      if (procs.length === 0) {
+        ctx.fillStyle = '#4b5563';
+        ctx.font = '13px sans-serif';
+        ctx.fillText('Esperando eventos del scheduler...', 12, 58);
+      }
+
       procs.forEach((proc, i) => {
         const y = topMargin + i * (rowH + 5);
         const procColor = proc.color || DEFAULT_COLOR;
 
-        // Color swatch next to label
         ctx.fillStyle = procColor;
-        ctx.fillRect(2, y + 8, 4, rowH - 12);
+        ctx.fillRect(2, y + 8, 5, rowH - 12);
 
-        // Label
         ctx.fillStyle = '#d1d5db';
         ctx.font = '12px monospace';
-        ctx.fillText(`${proc.pid}`, 10, y + 18);
+        ctx.fillText(`${proc.pid}`, 12, y + 18);
         ctx.fillStyle = '#9ca3af';
         ctx.font = '10px monospace';
-        ctx.fillText(proc.name, 10, y + 28);
+        ctx.fillText(proc.name || 'process', 12, y + 28);
 
-        // Segments — use the process-specific color
         (proc.segments || []).forEach(seg => {
           const startX = labelW + (seg.start / timeWindow) * chartW;
-          const segEnd = seg.end || (proc.state === 'TERMINATED' ? seg.start : now);
+          const segEnd = seg.end ?? (proc.state === 'TERMINATED' ? seg.start : now);
           const endX = labelW + (segEnd / timeWindow) * chartW;
           const segW = Math.max(endX - startX, 1);
 
@@ -96,7 +102,6 @@ export default function GanttChart({ processes, getRelativeTime }) {
           ctx.fillRect(startX, y + 2, segW, rowH - 4);
         });
 
-        // Row separator
         ctx.strokeStyle = '#1f2937';
         ctx.beginPath();
         ctx.moveTo(labelW, y + rowH + 2);
@@ -104,7 +109,6 @@ export default function GanttChart({ processes, getRelativeTime }) {
         ctx.stroke();
       });
 
-      // Auto-scroll to follow "now"
       if (followRightRef.current && container.scrollWidth > container.clientWidth) {
         container.scrollLeft = container.scrollWidth - container.clientWidth;
       }
@@ -120,45 +124,44 @@ export default function GanttChart({ processes, getRelativeTime }) {
   const handleZoomReset = () => {
     setZoomLevel(1.0);
     followRightRef.current = true;
+    setIsFollowingRight(true);
   };
 
   return (
     <div className="space-y-2">
-      {/* Zoom controls */}
       <div className="flex items-center gap-2 text-xs">
         <button
           onClick={handleZoomOut}
           disabled={zoomLevel <= ZOOM_MIN}
-          className="px-2 py-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-30 rounded text-gray-300 font-mono"
-          title="Zoom out"
+          className="h-8 w-8 rounded-md bg-gray-800 font-mono text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-30"
+          title="Alejar"
         >
-          −
+          -
         </button>
         <button
           onClick={handleZoomIn}
           disabled={zoomLevel >= ZOOM_MAX}
-          className="px-2 py-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-30 rounded text-gray-300 font-mono"
-          title="Zoom in"
+          className="h-8 w-8 rounded-md bg-gray-800 font-mono text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-30"
+          title="Acercar"
         >
           +
         </button>
         <button
           onClick={handleZoomReset}
-          className="px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-300 text-xs"
-          title="Reset zoom"
+          className="rounded-md bg-gray-800 px-2 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-700"
+          title="Restablecer zoom"
         >
           Reset
         </button>
-        <span className="text-gray-500 font-mono ml-1">{zoomLevel.toFixed(1)}×</span>
-        {!followRightRef.current && zoomLevel > 1.0 && (
-          <span className="text-yellow-600 ml-2">(scroll → para volver al ahora)</span>
+        <span className="ml-1 font-mono text-gray-500">{zoomLevel.toFixed(1)}x</span>
+        {!isFollowingRight && zoomLevel > 1.0 && (
+          <span className="ml-2 text-yellow-600">(scroll derecha para volver al ahora)</span>
         )}
       </div>
 
-      {/* Scrollable canvas */}
       <div
         ref={containerRef}
-        className="overflow-x-auto"
+        className="overflow-x-auto rounded-md bg-gray-950"
         style={{ minHeight: '200px' }}
       >
         <canvas ref={canvasRef} style={{ display: 'block' }} />

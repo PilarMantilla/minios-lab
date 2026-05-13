@@ -20,15 +20,43 @@ export default function App() {
   } = useSchedulerEvents();
   const [selectedPid, setSelectedPid] = useState(null);
 
+  const renderEvent = (event, index) => {
+    const details = [];
+
+    if (event.type === 'CONTEXT_SWITCH') {
+      details.push(`${event.from} -> ${event.to}`);
+      details.push(`${event.slice_ms}ms`);
+    } else if (event.type === 'PROCESS_CREATED') {
+      details.push(`PID ${event.pid}`);
+      if (event.name) details.push(event.name);
+    } else if (event.type === 'PROCESS_TERMINATED') {
+      details.push(`PID ${event.pid}`);
+      if (typeof event.cpu_ms === 'number') details.push(`${event.cpu_ms.toFixed(0)}ms CPU`);
+    } else if (event.type === 'SLICE_CHANGED') {
+      details.push(`${event.old_ms}ms -> ${event.new_ms}ms`);
+    } else if (event.pid) {
+      details.push(`PID ${event.pid}`);
+    }
+
+    return (
+      <div key={`${event.ts || index}-${index}`} className="flex items-center gap-2 rounded-md bg-gray-950/70 px-2 py-1.5">
+        <span className="shrink-0 rounded bg-gray-800 px-1.5 py-0.5 text-[11px] font-semibold text-gray-300">
+          {event.type}
+        </span>
+        <span className="min-w-0 truncate text-gray-500">
+          {details.join(' | ')}
+        </span>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-200 p-4">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-950 p-4 text-gray-200">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-white">miniOS Dashboard</h1>
-        <p className="text-gray-500 text-sm">Simulador de Context Switching — Observabilidad en tiempo real</p>
+        <p className="text-sm text-gray-500">Simulador de Context Switching - Observabilidad en tiempo real</p>
       </div>
 
-      {/* Capture controls bar (Instruments-style) */}
       <div className="mb-4">
         <CaptureControls
           isCapturing={isCapturing}
@@ -39,21 +67,15 @@ export default function App() {
         />
       </div>
 
-      {/* Main grid: 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-
-        {/* Left: Gantt + Process Table (3 cols) */}
-        <div className="lg:col-span-3 space-y-4">
-
-          {/* Gantt Chart */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3">Gantt Chart — Uso de CPU</h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="space-y-4 lg:col-span-3">
+          <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <h2 className="mb-3 text-sm font-semibold text-gray-400">Gantt Chart - Uso de CPU</h2>
             <GanttChart processes={processes} getRelativeTime={getRelativeTime} />
           </div>
 
-          {/* Process Table */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3">Process Table</h2>
+          <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <h2 className="mb-3 text-sm font-semibold text-gray-400">Process Table</h2>
             <ProcessTable
               processes={processes}
               selectedPid={selectedPid}
@@ -62,12 +84,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right sidebar (1 col) */}
         <div className="space-y-4">
-
-          {/* Metrics */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3">Metricas</h2>
+          <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <h2 className="mb-3 text-sm font-semibold text-gray-400">Metricas</h2>
             <MetricsPanel
               processes={processes}
               events={events}
@@ -76,9 +95,8 @@ export default function App() {
             />
           </div>
 
-          {/* Register View */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3">Detalle del Proceso</h2>
+          <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <h2 className="mb-3 text-sm font-semibold text-gray-400">Detalle del Proceso</h2>
             <RegisterView
               processes={processes}
               selectedPid={selectedPid}
@@ -86,20 +104,12 @@ export default function App() {
             />
           </div>
 
-          {/* Event Log */}
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-            <h2 className="text-sm font-semibold text-gray-400 mb-3">
-              Eventos recientes ({events.length})
+          <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <h2 className="mb-3 text-sm font-semibold text-gray-400">
+              Event Log ({events.length})
             </h2>
-            <div className="max-h-48 overflow-y-auto space-y-1 text-xs font-mono">
-              {events.slice(-20).reverse().map((e, i) => (
-                <div key={i} className="text-gray-500 truncate">
-                  <span className="text-gray-600">{e.type}</span>
-                  {e.from && <span className="text-yellow-600"> {e.from}→{e.to}</span>}
-                  {e.pid && !e.from && <span className="text-green-600"> PID {e.pid}</span>}
-                  {e.name && <span className="text-blue-600"> {e.name}</span>}
-                </div>
-              ))}
+            <div className="max-h-56 space-y-1 overflow-y-auto text-xs font-mono">
+              {events.slice(-24).reverse().map(renderEvent)}
               {events.length === 0 && (
                 <div className="text-gray-600">
                   {isCapturing ? 'Esperando eventos...' : 'Captura pausada'}

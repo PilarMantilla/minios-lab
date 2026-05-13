@@ -24,12 +24,12 @@ export default function CaptureControls({
   };
 
   return (
-    <div className="flex items-center gap-3 bg-gray-900 rounded-xl border border-gray-800 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900 px-4 py-3">
       {/* Record / Stop button */}
       {isCapturing ? (
         <button
           onClick={onStop}
-          className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-sm transition-colors"
+          className="flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
           title="Detener captura"
         >
           <span className="w-3 h-3 bg-white rounded-sm"></span>
@@ -38,7 +38,7 @@ export default function CaptureControls({
       ) : (
         <button
           onClick={onStart}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-red-400 border border-red-900 rounded-lg font-semibold text-sm transition-colors"
+          className="flex items-center gap-2 rounded-md border border-red-900 bg-gray-800 px-3 py-1.5 text-sm font-semibold text-red-400 transition-colors hover:bg-gray-700"
           title="Iniciar captura"
         >
           <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
@@ -49,7 +49,7 @@ export default function CaptureControls({
       {/* Reset button */}
       <button
         onClick={onReset}
-        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+        className="rounded-md bg-gray-800 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-gray-700"
         title="Limpiar eventos capturados"
       >
         Limpiar
